@@ -1,3 +1,18 @@
+spring:
+  data:
+    redis:
+      port: 6379
+      host: localhost
+
+currency-exchange:
+  api:
+    url: https://api.exchangeratesapi.io/v1
+    accessKey: 4dcf7f1ca62741ea341666f5de57f454
+    base: EUR
+    connectionRetrySeconds: 60
+    connectionRetryAttempts: 5
+  cron-expression: 0 0 */12 * * ?
+
 server:
   port: 9080
 
