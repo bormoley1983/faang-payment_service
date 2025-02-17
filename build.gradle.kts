@@ -18,6 +18,10 @@ dependencies {
      */
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-webflux:2.7.0")
+    implementation("org.springframework.boot:spring-boot-starter-cache:3.4.2")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis:3.4.2")
+
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
     /**
@@ -37,6 +41,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
     testImplementation("org.assertj:assertj-core:3.24.2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.projectreactor:reactor-test:3.7.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }
 
 tasks.withType<Test> {
