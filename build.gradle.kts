@@ -2,6 +2,7 @@ plugins {
     java
     id("org.springframework.boot") version "3.0.6"
     id("io.spring.dependency-management") version "1.1.0"
+    jacoco
 }
 
 group = "faang.school"
@@ -47,6 +48,30 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.7.toBigDecimal()
+            }
+            excludes = listOf(
+                "**/dto/**",
+                "**/repository/**",
+                "**/exception/**",
+                "**/config/**"
+            )
+        }
+    }
 }
 
 val test by tasks.getting(Test::class) { testLogging.showStandardStreams = true }
