@@ -55,3 +55,5 @@ Controllers:
 Configuration:
 - [RedisConfig](src/main/java/faang/school/paymentservice/config/redis/RedisConfig.java) — Redis caching configuration
 - [CurrencyExchangeConfig](src/main/java/faang/school/paymentservice/config/currency/CurrencyExchangeConfig.java) — currency exchange settings
+
+**Note:** Base code structure and architecture patterns are based on [FAANG School](https://github.com/faang-school) educational project.
