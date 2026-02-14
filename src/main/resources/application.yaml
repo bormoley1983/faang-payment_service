@@ -1,8 +1,10 @@
 spring:
   data:
     redis:
-      port: 6379
-      host: localhost
+      host: ${REDIS_URL:host.docker.internal}
+      port: ${REDIS_PORT:6379}
+    channels:
+      calculations_channel: ${REDIS_CALCULATIONS_CHANNEL:calculations_channel}
 
 currency-exchange:
   api:
@@ -14,8 +16,10 @@ currency-exchange:
   cron-expression: 0 0 */12 * * ?
 
 server:
-  port: 9080
+  port: ${PAYMENT_SERVICE_PORT:8082}
 
 logging:
   level:
     root: info
+    liquibase: info
+    org.hibernate.SQL: info
