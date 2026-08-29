@@ -12,8 +12,12 @@ Prerequisites:
 
 Run locally:
 ```sh
-./gradlew bootRun
+SPRING_PROFILES_ACTIVE=payment-mock ./gradlew bootRun
 ```
+
+The payment endpoint is an educational mock and is deliberately disabled unless
+the explicit `payment-mock` Spring profile is active. Do not enable this profile
+in production: it does not contact a payment processor or persist a ledger entry.
 
 Run tests:
 ```sh
@@ -35,7 +39,10 @@ Key configuration properties:
 - **Server Port**: 9080
 - **Redis**: localhost:6379
 - **Currency Exchange API**: https://api.exchangeratesapi.io/v1
+- **Currency Exchange API key**: required through `CURRENCY_EXCHANGE_ACCESS_KEY`
 - **Currency Update Schedule**: Every 12 hours (cron: `0 0 */12 * * ?`)
+- **Mock payment endpoint**: disabled by default; enable only with the
+  `payment-mock` profile for local development
 
 ## External Integrations
 
@@ -44,8 +51,8 @@ WebClient:
 - WebClient configuration: [CurrencyExchangeClientConfig](src/main/java/faang/school/paymentservice/config/currency/CurrencyExchangeClientConfig.java)
 
 Currency services:
-- [CurrencyService](src/main/java/faang/school/paymentservice/service/currecny/CurrencyService.java) — manages currency exchange rates and conversions
-- [CurrencyRateFetcher](src/main/java/faang/school/paymentservice/service/currecny/CurrencyRateFetcher.java) — fetches currency rates from external API
+- [CurrencyService](src/main/java/faang/school/paymentservice/service/currency/CurrencyService.java) — manages currency exchange rates and conversions
+- [CurrencyRateFetcher](src/main/java/faang/school/paymentservice/service/currency/CurrencyRateFetcher.java) — fetches currency rates from external API
 
 ## Architecture
 

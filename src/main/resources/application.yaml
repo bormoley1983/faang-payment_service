@@ -8,12 +8,18 @@ spring:
 
 currency-exchange:
   api:
-    url: https://api.exchangeratesapi.io/v1
-    accessKey: 4dcf7f1ca62741ea341666f5de57f454
-    base: EUR
-    connectionRetrySeconds: 60
-    connectionRetryAttempts: 5
-  cron-expression: 0 0 */12 * * ?
+    url: ${CURRENCY_EXCHANGE_API_URL:https://api.exchangeratesapi.io/v1}
+    access-key: ${CURRENCY_EXCHANGE_ACCESS_KEY}
+    base: ${CURRENCY_EXCHANGE_BASE:EUR}
+    connect-timeout: ${CURRENCY_EXCHANGE_CONNECT_TIMEOUT:PT3S}
+    request-timeout: ${CURRENCY_EXCHANGE_REQUEST_TIMEOUT:PT10S}
+    connection-retry-delay: ${CURRENCY_EXCHANGE_RETRY_DELAY:PT1S}
+    connection-retry-max-delay: ${CURRENCY_EXCHANGE_RETRY_MAX_DELAY:PT10S}
+    connection-retry-attempts: ${CURRENCY_EXCHANGE_RETRY_ATTEMPTS:3}
+    connection-retry-jitter: ${CURRENCY_EXCHANGE_RETRY_JITTER:0.5}
+    cache-ttl: ${CURRENCY_EXCHANGE_CACHE_TTL:PT13H}
+    refresh-timeout: ${CURRENCY_EXCHANGE_REFRESH_TIMEOUT:PT2M}
+  cron-expression: ${CURRENCY_EXCHANGE_CRON:0 0 */12 * * ?}
 
 server:
   port: ${PAYMENT_SERVICE_PORT:8082}

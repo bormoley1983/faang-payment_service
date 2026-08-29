@@ -1,6 +1,6 @@
-package faang.school.paymentservice.utils;
+package faang.school.paymentservice.service.currency;
 
-public final class CurrencyLogMessage {
+final class CurrencyLogMessages {
     public static final String UPDATE_SUCCESS = "Successfully updated currency rates";
     public static final String UPDATE_FAILURE = "Failed to update currency rates";
     public static final String FETCH_SUCCESS = "Successfully get currency rates from API";

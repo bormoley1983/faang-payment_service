@@ -1,0 +1,4 @@
+currency-exchange:
+  api:
+    # This value is intentionally non-secret and valid only for local mock startup.
+    access-key: unused-local-mock-key

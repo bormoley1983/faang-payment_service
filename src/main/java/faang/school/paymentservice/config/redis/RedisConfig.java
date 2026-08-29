@@ -4,10 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
-import org.springframework.data.redis.serializer.JacksonJsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
 @Configuration
 public class RedisConfig {
@@ -23,12 +20,7 @@ public class RedisConfig {
     }
 
     @Bean
-    public ReactiveRedisTemplate<String, Double> currencyRedisTemplate() {
-        RedisSerializationContext.RedisSerializationContextBuilder<String, Double> builder =
-                RedisSerializationContext.newSerializationContext(new StringRedisSerializer());
-        RedisSerializationContext<String, Double> context =
-                builder.value(new JacksonJsonRedisSerializer<>(Double.class)).build();
-
-        return new ReactiveRedisTemplate<>(redisConnectionFactory(), context);
+    public ReactiveStringRedisTemplate currencyRedisTemplate() {
+        return new ReactiveStringRedisTemplate(redisConnectionFactory());
     }
 }

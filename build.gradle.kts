@@ -43,6 +43,7 @@ dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor:$mapstructVersion")
 
     implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("com.github.f4b6a3:uuid-creator:6.1.1")
 
     /**
      * Tests
