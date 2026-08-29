@@ -5,7 +5,7 @@ Service responsible for processing payment requests from other services and mana
 ## Quick start
 
 Prerequisites:
-- Java 21+ (JDK)
+- Java 25+ (JDK)
 - Docker (for container runs)
 - Redis (for caching)
 - [faang-infra services](https://github.com/bormoley1983/faang-infra) running locally or accessible
