@@ -21,6 +21,8 @@ repositories {
     mavenCentral()
 }
 
+val mockitoAgent = configurations.create("mockitoAgent")
+
 dependencies {
     /**
      * Spring boot starters
@@ -60,15 +62,12 @@ dependencies {
 
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("com.squareup.okhttp3:mockwebserver:5.5.0")
+    mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
-
-        jvmArgs(
-        "-XX:+EnableDynamicAgentLoading",
-        "--enable-native-access=ALL-UNNAMED"
-    )
+    jvmArgs("-Xshare:off", "-javaagent:${mockitoAgent.asPath}")
 }
 
 tasks.test {
