@@ -6,6 +6,7 @@ import faang.school.paymentservice.repository.CurrencyRateRepository;
 import faang.school.paymentservice.service.currency.CurrencyService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -175,6 +176,151 @@ public class CurrencyServiceTest {
                 .verifyComplete();
 
         assertThat(mockWebServer.getRequestCount()).isEqualTo(3);
+    }
+
+    @Test
+    void rate429IsRetriedAsTransient() {
+        Duration cacheTtl = configureExchange(1);
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429));
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{ \"success\": true, \"rates\": {\"USD\": 1.25}}"));
+        when(currencyRateRepository.save(Currency.USD, 1.25, cacheTtl)).thenReturn(Mono.empty());
+        when(currencyRateRepository.markRefreshSuccessful(any(Instant.class), eq(cacheTtl)))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(currencyService.updateCurrencyRates())
+                .verifyComplete();
+
+        assertThat(mockWebServer.getRequestCount()).isEqualTo(2);
+    }
+
+    @Test
+    void emptyProviderBodyIsRejectedWithoutStore() {
+        // An empty JSON object deserializes to success=false (primitive default),
+        // so the rejection surfaces as an unsuccessful response, not an empty body.
+        configureExchange(0);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{}"));
+
+        StepVerifier.create(currencyService.updateCurrencyRates())
+                .expectErrorMatches(error -> error.getMessage().contains("unsuccessful"))
+                .verify();
+
+        verify(currencyRateRepository, times(0))
+                .save(any(Currency.class), anyDouble(), any(Duration.class));
+    }
+
+    @Test
+    void nullRatesAreRejected() {
+        configureExchange(0);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{ \"success\": true }"));
+
+        StepVerifier.create(currencyService.updateCurrencyRates())
+                .expectErrorMatches(error -> error.getMessage().contains("no rates"))
+                .verify();
+
+        verify(currencyRateRepository, times(0))
+                .save(any(Currency.class), anyDouble(), any(Duration.class));
+    }
+
+    @Test
+    void emptyRatesMapIsRejected() {
+        configureExchange(0);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{ \"success\": true, \"rates\": {}}"));
+
+        StepVerifier.create(currencyService.updateCurrencyRates())
+                .expectErrorMatches(error -> error.getMessage().contains("no rates"))
+                .verify();
+
+        verify(currencyRateRepository, times(0))
+                .save(any(Currency.class), anyDouble(), any(Duration.class));
+    }
+
+    @Test
+    void nonFiniteRateIsRejectedAtDecodeLayer() {
+        // Jackson rejects the NaN token before validation runs; the failure must
+        // still surface as an error and never reach the store.
+        configureExchange(0);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{ \"success\": true, \"rates\": {\"USD\": 1.25, \"EUR\": NaN}}"));
+
+        StepVerifier.create(currencyService.updateCurrencyRates())
+                .expectError()
+                .verify();
+
+        verify(currencyRateRepository, times(0))
+                .save(any(Currency.class), anyDouble(), any(Duration.class));
+    }
+
+    @Test
+    void zeroRateIsRejected() {
+        configureExchange(0);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{ \"success\": true, \"rates\": {\"USD\": 0}}"));
+
+        StepVerifier.create(currencyService.updateCurrencyRates())
+                .expectErrorMatches(error -> error.getMessage().contains("invalid rate"))
+                .verify();
+
+        verify(currencyRateRepository, times(0))
+                .save(any(Currency.class), anyDouble(), any(Duration.class));
+    }
+
+    @Test
+    void connectionFailureIsMappedToSafeProviderException() {
+        configureExchange(0);
+        mockWebServer.enqueue(new MockResponse()
+                .setSocketPolicy(SocketPolicy.DISCONNECT_AT_START));
+
+        StepVerifier.create(currencyService.updateCurrencyRates())
+                .expectErrorMatches(error -> error.getMessage()
+                        .equals("Exchange-rate provider is unavailable"))
+                .verify();
+
+        verify(currencyRateRepository, times(0))
+                .save(any(Currency.class), anyDouble(), any(Duration.class));
+    }
+
+    @Test
+    void storeFailurePropagatesToCaller() {
+        // Note: the production chain uses `.then(...)` after the save flux, which
+        // swallows the first error signal; the observable contract is that the
+        // failure still propagates to the caller (the scheduled fetcher records it).
+        Duration cacheTtl = configureExchange(0);
+        mockWebServer.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setHeader("Content-Type", "application/json")
+                .setBody("{ \"success\": true, \"rates\": {\"USD\": 1.25}}"));
+        when(currencyRateRepository.save(Currency.USD, 1.25, cacheTtl))
+                .thenReturn(Mono.error(new IllegalStateException("redis down")));
+        lenient().when(currencyRateRepository.markRefreshSuccessful(any(Instant.class), eq(cacheTtl)))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(currencyService.updateCurrencyRates())
+                .expectErrorMatches(error -> error.getMessage().equals("redis down"))
+                .verify();
+    }
+
+    @Test
+    void getExchangeRate_completesEmptyWhenNoFreshRate() {
+        when(currencyRateRepository.get(Currency.USD)).thenReturn(Mono.empty());
+
+        StepVerifier.create(currencyService.getExchangeRate(Currency.USD))
+                .verifyComplete();
     }
 
     private Duration configureExchange(long retryAttempts) {

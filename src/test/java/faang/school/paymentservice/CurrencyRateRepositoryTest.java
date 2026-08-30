@@ -74,4 +74,51 @@ class CurrencyRateRepositoryTest {
         verify(valueOperations).set(
                 "payment:fx-rate:v1:last-success", refreshedAt.toString(), ttl);
     }
+
+    @Test
+    void returnsLastSuccessfulRefreshWhenPresent() {
+        // Arrange: freshness marker holds a parseable instant
+        Instant refreshedAt = Instant.parse("2026-08-29T12:00:00Z");
+        when(valueOperations.get("payment:fx-rate:v1:last-success"))
+                .thenReturn(Mono.just(refreshedAt.toString()));
+
+        // Act: read the marker
+        Mono<Instant> actual = repository.getLastSuccessfulRefresh();
+
+        // Assert: stored value round-trips through Instant parsing
+        StepVerifier.create(actual)
+                .expectNext(refreshedAt)
+                .verifyComplete();
+    }
+
+    @Test
+    void completesEmptyWhenNoFreshnessMarkerStored() {
+        // Arrange: marker absent from the cache
+        when(valueOperations.get("payment:fx-rate:v1:last-success"))
+                .thenReturn(Mono.empty());
+
+        // Act: read the marker
+        Mono<Instant> actual = repository.getLastSuccessfulRefresh();
+
+        // Assert: absence surfaces as an empty completion, not an error
+        StepVerifier.create(actual)
+                .verifyComplete();
+    }
+
+    @Test
+    void returnsRateWhenFreshnessMarkerPresent() {
+        // Arrange: marker present and rate stored under the versioned key
+        when(redisTemplate.hasKey("payment:fx-rate:v1:last-success"))
+                .thenReturn(Mono.just(true));
+        when(valueOperations.get("payment:fx-rate:v1:USD"))
+                .thenReturn(Mono.just("1.25"));
+
+        // Act: read the rate
+        Mono<Double> actual = repository.get(Currency.USD);
+
+        // Assert: stored string round-trips through double parsing
+        StepVerifier.create(actual)
+                .expectNext(1.25)
+                .verifyComplete();
+    }
 }

@@ -65,41 +65,79 @@ dependencies {
     mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 
+jacoco {
+    toolVersion = "0.8.15"
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
     jvmArgs("-Xshare:off", "-javaagent:${mockitoAgent.asPath}")
 }
 
-tasks.test {
-    finalizedBy(tasks.jacocoTestReport)
-}
-
-tasks.jacocoTestReport {
-    dependsOn(tasks.test)
-}
-
-tasks.jacocoTestCoverageVerification {
-    violationRules {
-        rule {
-            limit {
-                minimum = 0.7.toBigDecimal()
-            }
-            excludes = listOf(
-                "**/dto/**",
-                "**/repository/**",
-                "**/exception/**",
-                "**/config/**"
-            )
-        }
+// Unit tests only — integration tests are excluded by tag and run via `integrationTest`.
+tasks.named<Test>("test") {
+    useJUnitPlatform {
+        excludeTags("integration")
     }
-}
-
-tasks.test {
     testLogging {
         events("passed", "skipped", "failed", "standardOut", "standardError")
         showStandardStreams = true
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
+    finalizedBy(tasks.named("jacocoTestReport"))
+}
+
+// Integration tests (Testcontainers) — run explicitly, not part of the unit gate.
+tasks.register<Test>("integrationTest") {
+    description = "Runs integration tests (tagged 'integration')."
+    group = "verification"
+    useJUnitPlatform {
+        includeTags("integration")
+    }
+    testLogging {
+        events("passed", "skipped", "failed", "standardOut", "standardError")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        csv.required.set(false)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco"))
+    }
+}
+
+// Coverage gate for application logic only. Documented exclusions (narrow, per rules):
+// PaymentApplication (bootstrap), config.* (bean wiring / property holders),
+// dto.* (records/enums with no custom behavior), exception.* (no-logic exceptions),
+// service.currency.CurrencyLogMessages (static log-message constants, no logic).
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.test)
+    violationRules {
+        rule {
+            element = "CLASS"
+            includes = listOf(
+                "faang.school.paymentservice.controller.*",
+                "faang.school.paymentservice.repository.*",
+                "faang.school.paymentservice.service.*"
+            )
+            excludes = listOf(
+                "faang.school.paymentservice.service.currency.CurrencyLogMessages"
+            )
+            limit {
+                counter = "INSTRUCTION"
+                value = "COVEREDRATIO"
+                minimum = "0.85".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.jacocoTestCoverageVerification)
 }
 
 tasks.bootJar {
