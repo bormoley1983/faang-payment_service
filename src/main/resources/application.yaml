@@ -7,9 +7,10 @@ spring:
       calculations_channel: ${REDIS_CALCULATIONS_CHANNEL:calculations_channel}
 
 currency-exchange:
+  enabled: ${CURRENCY_EXCHANGE_ENABLED:false}
   api:
     url: ${CURRENCY_EXCHANGE_API_URL:https://api.exchangeratesapi.io/v1}
-    access-key: ${CURRENCY_EXCHANGE_ACCESS_KEY}
+    access-key: ${CURRENCY_EXCHANGE_ACCESS_KEY:disabled}
     base: ${CURRENCY_EXCHANGE_BASE:EUR}
     connect-timeout: ${CURRENCY_EXCHANGE_CONNECT_TIMEOUT:PT3S}
     request-timeout: ${CURRENCY_EXCHANGE_REQUEST_TIMEOUT:PT10S}
