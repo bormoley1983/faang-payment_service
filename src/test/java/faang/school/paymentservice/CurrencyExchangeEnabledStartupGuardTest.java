@@ -1,7 +1,6 @@
 package faang.school.paymentservice;
 
 import faang.school.paymentservice.config.currency.CurrencyExchangeConfig;
-import faang.school.paymentservice.config.currency.CurrencyExchangeEnabledEnvironmentPostProcessor;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -17,12 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CurrencyExchangeEnabledStartupGuardTest {
 
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withInitializer(context -> {
-                // ApplicationContextRunner does not load spring.factories post-processors, so apply
-                // the enabled-flag mirror explicitly to mirror real startup behavior.
-                new CurrencyExchangeEnabledEnvironmentPostProcessor()
-                        .postProcessEnvironment(context.getEnvironment(), null);
-            })
             .withUserConfiguration(TestConfig.class)
             .withPropertyValues(
                     "currency-exchange.api.url=https://api.example.com/v1",
@@ -42,6 +35,7 @@ class CurrencyExchangeEnabledStartupGuardTest {
         contextRunner
                 .withPropertyValues(
                         "currency-exchange.enabled=true",
+                        "currency-exchange.api.enabled=true",
                         "currency-exchange.api.access-key=unused-local-mock-key")
                 .run(context -> {
                     // Act/Assert: startup must be rejected
@@ -58,6 +52,7 @@ class CurrencyExchangeEnabledStartupGuardTest {
         contextRunner
                 .withPropertyValues(
                         "currency-exchange.enabled=true",
+                        "currency-exchange.api.enabled=true",
                         "currency-exchange.api.access-key=real-production-key")
                 .run(context -> {
                     // Act/Assert: startup succeeds and the flag is mirrored into the config
@@ -74,6 +69,7 @@ class CurrencyExchangeEnabledStartupGuardTest {
         contextRunner
                 .withPropertyValues(
                         "currency-exchange.enabled=false",
+                        "currency-exchange.api.enabled=false",
                         "currency-exchange.api.access-key=unused-local-mock-key")
                 .run(context -> {
                     // Act/Assert: local mock startup still works
@@ -89,6 +85,7 @@ class CurrencyExchangeEnabledStartupGuardTest {
         contextRunner
                 .withPropertyValues(
                         "currency-exchange.enabled=false",
+                        "currency-exchange.api.enabled=false",
                         "currency-exchange.api.access-key=disabled")
                 .run(context -> {
                     // Act/Assert: an unset/default key must not block startup when disabled

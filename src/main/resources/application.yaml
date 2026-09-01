@@ -9,6 +9,7 @@ spring:
 currency-exchange:
   enabled: ${CURRENCY_EXCHANGE_ENABLED:false}
   api:
+    enabled: ${currency-exchange.enabled:false}
     url: ${CURRENCY_EXCHANGE_API_URL:https://api.exchangeratesapi.io/v1}
     access-key: ${CURRENCY_EXCHANGE_ACCESS_KEY:disabled}
     base: ${CURRENCY_EXCHANGE_BASE:EUR}
