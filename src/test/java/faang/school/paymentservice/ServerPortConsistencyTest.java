@@ -3,9 +3,9 @@ package faang.school.paymentservice;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,25 +62,36 @@ class ServerPortConsistencyTest {
     }
 
     private static String readServiceFile(String relativePath) throws IOException {
-        // Resolve the service root from this class's compiled location so the
-        // test is independent of Gradle's working directory. On Windows the URL
-        // path carries a leading slash that Paths.get rejects, so strip it.
-        String rawPath = ServerPortConsistencyTest.class.getProtectionDomain()
-                .getCodeSource().getLocation().getPath();
-        if (rawPath.startsWith("/")) {
-            rawPath = rawPath.substring(1);
+        Path classDir;
+        try {
+            // Convert URL to URI first, so Linux absolute paths keep leading '/'
+            // and Windows drive letters are decoded correctly.
+            classDir = Path.of(ServerPortConsistencyTest.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI());
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("Unable to resolve compiled test location", e);
         }
-        Path classDir = Paths.get(rawPath);
-        // The code-source location points at the compiled package directory.
-        // Walk up until we land on the service root (the dir containing Dockerfile).
-        Path resolved = classDir;
-        while (resolved != null && !Files.exists(resolved.resolve("Dockerfile"))) {
-            resolved = resolved.getParent();
+
+        Path resolved = findServiceRoot(classDir);
+        if (resolved == null) {
+            // Fallback for unusual runners: check current working directory as well.
+            resolved = findServiceRoot(Path.of(System.getProperty("user.dir")));
         }
         if (resolved == null) {
             throw new IllegalStateException("Could not locate service root from " + classDir);
         }
         return Files.readString(resolved.resolve(relativePath));
+    }
+
+    private static Path findServiceRoot(Path start) {
+        Path current = start;
+        while (current != null) {
+            if (Files.exists(current.resolve("Dockerfile"))) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        return null;
     }
 
     private static int extractFirstInt(String content, String regex) {
