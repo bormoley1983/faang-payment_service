@@ -28,7 +28,7 @@ Build and run in Docker:
 ```sh
 ./gradlew build
 docker build -t payment-service .
-docker run -p 9080:9080 payment-service
+docker run -p 8082:8082 payment-service
 ```
 
 ## Configuration
@@ -36,7 +36,7 @@ docker run -p 9080:9080 payment-service
 Main config: [src/main/resources/application.yaml](src/main/resources/application.yaml)
 
 Key configuration properties:
-- **Server Port**: 9080
+- **Server Port**: 8082
 - **Redis**: localhost:6379
 - **Currency Exchange API**: https://api.exchangeratesapi.io/v1
 - **Currency Exchange API key**: required through `CURRENCY_EXCHANGE_ACCESS_KEY`

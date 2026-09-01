@@ -17,5 +17,5 @@ WORKDIR /app
 COPY --chown=10001:10001 build/libs/service.jar /app/service.jar
 
 USER 10001:10001
-EXPOSE 9080
+EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "/app/service.jar"]
