@@ -104,4 +104,60 @@ class CurrencyExchangeConfigTest {
         // Assert: equality is allowed (>= comparison)
         assertThat(actual).isTrue();
     }
+
+    @Test
+    void mockPlaceholderKey_whenDisabled_passesAccessKeyInvariant() {
+        // Arrange: integration disabled, key is the documented local mock placeholder
+        CurrencyExchangeConfig config = validConfig();
+        config.setEnabled(false);
+        config.setAccessKey(CurrencyExchangeConfig.MOCK_ACCESS_KEY);
+
+        // Act: evaluate the @AssertTrue access-key invariant
+        boolean actual = config.isAccessKeyNotMockPlaceholderWhenEnabled();
+
+        // Assert: placeholder is tolerated while the integration is off (local mock startup)
+        assertThat(actual).isTrue();
+    }
+
+    @Test
+    void mockPlaceholderKey_whenEnabled_failsAccessKeyInvariant() {
+        // Arrange: integration enabled, key is still the documented local mock placeholder
+        CurrencyExchangeConfig config = validConfig();
+        config.setEnabled(true);
+        config.setAccessKey(CurrencyExchangeConfig.MOCK_ACCESS_KEY);
+
+        // Act: evaluate the invariant
+        boolean actual = config.isAccessKeyNotMockPlaceholderWhenEnabled();
+
+        // Assert: placeholder is rejected when the external integration is enabled
+        assertThat(actual).isFalse();
+    }
+
+    @Test
+    void realKey_whenEnabled_passesAccessKeyInvariant() {
+        // Arrange: integration enabled with a genuine (non-placeholder) key
+        CurrencyExchangeConfig config = validConfig();
+        config.setEnabled(true);
+        config.setAccessKey("real-production-key");
+
+        // Act: evaluate the invariant
+        boolean actual = config.isAccessKeyNotMockPlaceholderWhenEnabled();
+
+        // Assert: a real key is accepted when enabled
+        assertThat(actual).isTrue();
+    }
+
+    @Test
+    void anyKey_whenDisabled_passesAccessKeyInvariant() {
+        // Arrange: integration disabled, arbitrary non-placeholder key
+        CurrencyExchangeConfig config = validConfig();
+        config.setEnabled(false);
+        config.setAccessKey("anything");
+
+        // Act: evaluate the invariant
+        boolean actual = config.isAccessKeyNotMockPlaceholderWhenEnabled();
+
+        // Assert: guard is a no-op while disabled
+        assertThat(actual).isTrue();
+    }
 }

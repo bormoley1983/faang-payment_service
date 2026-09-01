@@ -19,11 +19,16 @@ import java.time.Duration;
 @ConfigurationProperties(prefix = "currency-exchange.api")
 @Validated
 public class CurrencyExchangeConfig {
+
+    public static final String MOCK_ACCESS_KEY = "unused-local-mock-key";
+
     @NotBlank
     private String url;
 
     @NotBlank
     private String accessKey;
+
+    private boolean enabled = false;
 
     @NotNull
     private Currency base;
@@ -62,6 +67,11 @@ public class CurrencyExchangeConfig {
                 && isPositive(cacheTtl)
                 && isPositive(refreshTimeout)
                 && connectionRetryMaxDelay.compareTo(connectionRetryDelay) >= 0;
+    }
+
+    @AssertTrue(message = "currency-exchange.api.access-key must not be the documented mock placeholder when currency-exchange.enabled=true")
+    public boolean isAccessKeyNotMockPlaceholderWhenEnabled() {
+        return !enabled || !MOCK_ACCESS_KEY.equals(accessKey);
     }
 
     private boolean isPositive(Duration duration) {
