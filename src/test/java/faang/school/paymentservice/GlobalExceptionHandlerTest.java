@@ -11,9 +11,13 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -21,6 +25,19 @@ class GlobalExceptionHandlerTest {
 
     private final UuidCreatorV7Generator uuidGenerator = new UuidCreatorV7Generator();
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler(uuidGenerator);
+
+    @Test
+    void errorResponseCopiesDetailsAndReturnsAnImmutableMap() {
+        Map<String, String> details = new HashMap<>(Map.of("field", "message"));
+
+        ErrorResponse response = new ErrorResponse(
+                "VALIDATION_ERROR", "invalid", Instant.EPOCH, "/payments", "request-1", details);
+        details.put("other", "changed");
+
+        assertThat(response.details()).containsExactlyEntriesOf(Map.of("field", "message"));
+        assertThatThrownBy(() -> response.details().put("other", "changed"))
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
 
     @Test
     void runtimeExceptionNeverLeaksInternalOrNullMessage() {

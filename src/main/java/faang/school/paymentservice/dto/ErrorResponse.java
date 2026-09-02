@@ -11,4 +11,7 @@ public record ErrorResponse(
         String correlationId,
         Map<String, String> details
 ) {
+    public ErrorResponse {
+        details = details == null ? Map.of() : Map.copyOf(details);
+    }
 }
