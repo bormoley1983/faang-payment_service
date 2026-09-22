@@ -26,6 +26,24 @@ currency-exchange:
 server:
   port: ${PAYMENT_SERVICE_PORT:8082}
 
+management:
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:9090}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: payment-service
+      environment: ${METRICS_ENVIRONMENT:local}
+      cluster: ${METRICS_CLUSTER:local}
+
 logging:
   level:
     root: info
